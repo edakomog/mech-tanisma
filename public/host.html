@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yakın Tahmin — Host Paneli</title>
+<style>
+  :root {
+    --bg: #1a0000;
+    --bg2: #2d0505;
+    --card: #3d0a0a;
+    --card2: #4a0f0f;
+    --border: #7f1d1d;
+    --border2: #991b1b;
+    --fg: #fff5f5;
+    --mut: #fca5a5;
+    --acc: #ef4444;
+    --acc2: #dc2626;
+    --gold: #fbbf24;
+    --ok: #4ade80;
+    --warn: #fbbf24;
+    --info: #38bdf8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at top, #4a0a0a 0%, #1a0000 70%);
+    color: var(--fg);
+    padding: 20px;
+    min-height: 100vh;
+  }
+  main { max-width: 1000px; margin: 0 auto; }
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #fff;
+  }
+  .logo span { color: var(--acc); }
+  .host-badge {
+    background: #7f1d1d44;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--mut);
+  }
+  .phase-badge {
+    margin-left: auto;
+    padding: 5px 14px;
+    border-radius: 99px;
+    font-size: .82rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+  }
+  .phase-lobby   { background: #1e3a5f; color: var(--info); }
+  .phase-question{ background: #78350f; color: var(--gold); }
+  .phase-reveal  { background: #14532d; color: var(--ok); }
+  .phase-finished{ background: #3b0764; color: #c4b5fd; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--mut);
+    margin-bottom: 12px;
+  }
+
+  input[type="text"], input[type="number"], input[type="password"] {
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: #1a0000;
+    color: #fff;
+    font-size: .95rem;
+    transition: border-color .2s;
+  }
+  input:focus { outline: none; border-color: var(--acc); }
+  input::placeholder { color: #7f3f3f; }
+
+  .btn {
+    padding: 12px 22px;
+    border: 0;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--acc), var(--acc2));
+    color: #fff;
+    font-size: .95rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+    box-shadow: 0 3px 12px #ef444444;
+    white-space: nowrap;
+  }
+  .btn:active { transform: scale(.96); }
+  .btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+  .btn.sec {
+    background: #3d0a0a;
+    box-shadow: none;
+    border: 1px solid var(--border);
+    color: var(--fg);
+  }
+  .btn.sm { padding: 5px 12px; font-size: .8rem; }
+  .btn.big { width: 100%; padding: 16px; font-size: 1.1rem; margin-top: 6px; }
+  .btn.next { background: linear-gradient(135deg, #166534, #14532d); box-shadow: 0 3px 12px #4ade8044; }
+  .btn.finish { background: linear-gradient(135deg, #6d28d9, #4c1d95); box-shadow: 0 3px 12px #6d28d944; }
+
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .row input { flex: 1; min-width: 100px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 8px 6px; border-bottom: 1px solid #7f1d1d33; font-size: .9rem; }
+  td:last-child { text-align: right; }
+  tr.win td { color: var(--gold); font-weight: 800; }
+
+  .dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+  .dot-on  { background: var(--ok); }
+  .dot-off { background: #64748b; }
+
+  .answer-reveal {
+    font-size: 2.8rem;
+    font-weight: 900;
+    color: var(--ok);
+    text-shadow: 0 0 30px #4ade8055;
+    margin: 8px 0;
+  }
+
+  /* QR */
+  .qr-wrap {
+    background: #fff;
+    border-radius: 12px;
+    padding: 8px;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+  .qr-wrap img { display: block; width: 200px; height: 200px; border-radius: 6px; }
+  .qr-url {
+    font-size: .78rem;
+    color: var(--mut);
+    word-break: break-all;
+    margin-top: 4px;
+  }
+
+  /* Progress */
+  .progress-bar {
+    background: #7f1d1d33;
+    border-radius: 99px;
+    height: 8px;
+    margin: 10px 0;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--acc2), var(--gold));
+    border-radius: 99px;
+    transition: width .4s;
+  }
+
+  /* Answer hint box (only host sees) */
+  .answer-hint {
+    background: #78350f33;
+    border: 1px solid #92400e;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin: 10px 0;
+  }
+  .answer-hint .label { font-size: .78rem; color: #fbbf24bb; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+  .answer-hint .val { font-size: 1.5rem; font-weight: 900; color: var(--gold); }
+
+  /* Question text large */
+  .q-text { font-size: 1.35rem; font-weight: 800; line-height: 1.35; color: #fff; margin-bottom: 8px; }
+
+  /* Status counts */
+  .stat-row {
+    display: flex;
+    gap: 16px;
+    margin: 10px 0;
+    flex-wrap: wrap;
+  }
+  .stat-box {
+    background: #7f1d1d33;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 18px;
+    text-align: center;
+    flex: 1;
+    min-width: 80px;
+  }
+  .stat-box .num { font-size: 1.7rem; font-weight: 900; color: #fff; }
+  .stat-box .desc { font-size: .72rem; color: var(--mut); margin-top: 2px; text-transform: uppercase; letter-spacing: .05em; }
+
+  /* Login */
+  .login-wrap { max-width: 400px; margin: 80px auto; }
+
+  /* Reveal diff chip */
+  .diff-chip {
+    font-size: .78rem;
+    color: var(--mut);
+    background: #7f1d1d33;
+    border-radius: 6px;
+    padding: 2px 8px;
+    margin-left: 6px;
+  }
+  .winner-chip {
+    font-size: .78rem;
+    color: var(--gold);
+    font-weight: 800;
+  }
+
+  /* Rank in leaderboard */
+  .rank-medal { font-size: 1rem; width: 28px; display: inline-block; text-align: center; }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const app = document.getElementById('app');
+let ws, state = null, denied = false, qrData = '', qrGeneratedUrl = '';
+let key = new URLSearchParams(location.search).get('key') || sessionStorage.getItem('yt-hostkey') || '';
+
+function connect() {
+  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+  ws.onopen = () => { if (key) ws.send(JSON.stringify({ type: 'hostAuth', key })); else render(); };
+  ws.onmessage = (e) => {
+    const m = JSON.parse(e.data);
+    if (m.type === 'hostDenied') { denied = true; sessionStorage.removeItem('yt-hostkey'); key = ''; render(); }
+    else if (m.type === 'hostState') { denied = false; sessionStorage.setItem('yt-hostkey', key); state = m; render(); }
+  };
+  ws.onclose = () => setTimeout(connect, 1500);
+}
+const act = (type, extra) => ws && ws.readyState === 1 && ws.send(JSON.stringify({ type, ...extra }));
+
+function login() {
+  key = (document.getElementById('k') || {}).value || '';
+  key = key.trim();
+  ws.send(JSON.stringify({ type: 'hostAuth', key }));
+}
+function addQ() {
+  const f = (id) => (document.getElementById(id)||{}).value || '';
+  const text = f('qt').trim();
+  const answer = f('qa');
+  const unit = f('qu');
+  if (!text || !answer) return;
+  act('addQuestion', { text, answer, unit });
+  document.getElementById('qt').value = '';
+  document.getElementById('qa').value = '';
+  document.getElementById('qu').value = '';
+}
+
+async function loadQR(force) {
+  try {
+    const res = await fetch('/qr?' + Date.now()); // cache bust
+    const data = await res.json();
+    qrData = data.dataUrl;
+    qrGeneratedUrl = data.url;
+    render();
+  } catch {}
+}
+function refreshQR() {
+  qrData = '';
+  qrGeneratedUrl = '';
+  render();
+  loadQR(true);
+}
+
+function phaseName(p) {
+  if (p === 'lobby')    return ['Lobi', 'phase-lobby'];
+  if (p === 'question') return ['Soru Zamanı', 'phase-question'];
+  if (p === 'reveal')   return ['Sonuçlar', 'phase-reveal'];
+  if (p === 'finished') return ['Oyun Bitti', 'phase-finished'];
+  return [p, ''];
+}
+function rankMedal(i) {
+  if (i === 0) return '🥇';
+  if (i === 1) return '🥈';
+  if (i === 2) return '🥉';
+  return (i + 1) + '.';
+}
+
+function render() {
+  if (!state) {
+    app.innerHTML = `
+      <div class="login-wrap">
+        <div class="card">
+          <div class="logo" style="text-align:center;margin-bottom:16px">🎯 Yakın <span>Tahmin</span></div>
+          <div class="card-title">Host Girişi</div>
+          <p style="color:var(--mut);font-size:.88rem;margin-bottom:12px">Sunucu konsolunda yazan host anahtarını gir.</p>
+          <div class="row">
+            <input id="k" type="password" placeholder="Host anahtarı" style="flex:1">
+            <button class="btn" onclick="login()">Gir →</button>
+          </div>
+          <p style="color:#f87171;font-size:.88rem;margin-top:8px;min-height:1.4em">${denied ? '❌ Anahtar yanlış.' : ''}</p>
+        </div>
+      </div>`;
+    setTimeout(() => { const el = document.getElementById('k'); if(el) el.focus(); }, 50);
+    return;
+  }
+
+  // QR yükle
+  if (!qrData && state.phase === 'lobby') loadQR();
+
+  const s = state, q = s.question;
+  const [phaseLabel, phaseClass] = phaseName(s.phase);
+  const answered = s.players.filter(p => p.answered).length;
+
+  let html = `
+    <div class="header">
+      <div class="logo">🎯 Yakın <span>Tahmin</span></div>
+      <div class="host-badge">Host Paneli</div>
+      <div class="phase-badge ${phaseClass}">${phaseLabel}</div>
+    </div>`;
+
+  /* ============ LOBBY ============ */
+  if (s.phase === 'lobby') {
+    html += `
+      <div class="grid">
+        <!-- QR + URL -->
+        <div class="card">
+          <div class="card-title">📱 Oyuncuların girdiği link (QR okutun)</div>
+          ${qrData
+            ? `<div class="qr-wrap"><img src="${qrData}" alt="QR"></div>
+               <div class="qr-url">🔗 ${esc(qrGeneratedUrl)}</div>`
+            : '<p style="color:var(--mut)">QR yükleniyor...</p>'}
+          <button class="btn sec" style="margin-top:10px;width:100%;font-size:.85rem" onclick="refreshQR()">🔄 QR Güncelle (ngrok sonrası)</button>
+        </div>
+
+        <!-- Oyuncular -->
+        <div class="card">
+          <div class="card-title">👥 Katılanlar (${s.players.length})</div>
+          <table>
+            ${s.players.map(p => `
+              <tr>
+                <td><span class="dot ${p.online ? 'dot-on' : 'dot-off'}"></span>${esc(p.name)}</td>
+                <td><button class="btn sec sm" onclick="act('kick',{name:'${esc(p.name).replace(/'/g,"\\'")}'})">Çıkar</button></td>
+              </tr>`).join('') || '<tr><td colspan="2" style="color:var(--mut);padding:12px 6px">Henüz kimse yok…</td></tr>'}
+          </table>
+          <div style="margin-top:14px">
+            <button class="btn big" ${s.players.length && s.questionCount ? '' : 'disabled'} onclick="act('start')">
+              ▶ Oyunu Başlat (${s.players.length} oyuncu, ${s.questionCount} soru)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Soru yönetimi -->
+      <div class="card">
+        <div class="card-title">📝 Sorular (${s.questionCount})</div>
+        <table style="margin-bottom:12px">
+          ${s.questions.map((x, i) => `
+            <tr>
+              <td style="color:var(--mut);width:24px">${i+1}.</td>
+              <td>${esc(x.text)}</td>
+              <td style="color:var(--gold)">${esc(x.answer)} ${esc(x.unit)}</td>
+              <td><button class="btn sec sm" onclick="act('removeQuestion',{index:${i}})">🗑 Sil</button></td>
+            </tr>`).join('') || '<tr><td colspan="4" style="color:var(--mut);padding:10px 6px">Soru eklenmedi.</td></tr>'}
+        </table>
+        <div class="row">
+          <input id="qt" type="text" placeholder="Soru metni (ör. Ay'ın Dünya'ya uzaklığı)" style="flex:3;min-width:160px">
+          <input id="qa" type="number" step="any" placeholder="Cevap" style="flex:1;min-width:80px">
+          <input id="qu" type="text" placeholder="Birim" style="flex:1;min-width:60px">
+          <button class="btn" onclick="addQ()">+ Ekle</button>
+        </div>
+      </div>`;
+  }
+
+  /* ============ QUESTION ============ */
+  if (s.phase === 'question') {
+    const pct = Math.round((answered / Math.max(s.players.length, 1)) * 100);
+    html += `
+      <div class="card">
+        <div class="card-title">Soru ${q.index + 1} / ${q.total}</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <div class="q-text">${esc(q.text)}</div>
+        ${q.unit ? `<span style="color:var(--mut);font-size:.88rem">Birim: ${esc(q.unit)}</span>` : ''}
+        <div class="answer-hint">
+          <div class="label">Doğru Cevap (sadece sen görüyorsun)</div>
+          <div class="val">${esc(q.answer)} ${esc(q.unit)}</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-box"><div class="num">${answered}</div><div class="desc">Cevapladı</div></div>
+          <div class="stat-box"><div class="num">${s.players.length - answered}</div><div class="desc">Bekliyor</div></div>
+          <div class="stat-box"><div class="num">${s.players.length}</div><div class="desc">Toplam</div></div>
+        </div>
+        <button class="btn big" onclick="act('reveal')">👁 Cevabı Aç ve Sonuçları Göster</button>
+      </div>
+
+      <!-- Oyuncu listesi -->
+      <div class="card">
+        <div class="card-title">Oyuncu Durumu</div>
+        <table>
+          ${s.players.map(p => `
+            <tr>
+              <td><span class="dot ${p.online ? 'dot-on' : 'dot-off'}"></span>${esc(p.name)}</td>
+              <td style="font-size:1.1rem">${p.answered ? '✅' : '⏳'}</td>
+              <td style="color:var(--mut)">${p.score} puan</td>
+            </tr>`).join('')}
+        </table>
+      </div>`;
+  }
+
+  /* ============ REVEAL ============ */
+  if (s.phase === 'reveal') {
+    const isLast = q.index + 1 >= q.total;
+    html += `
+      <div class="card">
+        <div class="card-title">Soru ${q.index + 1} / ${q.total} — Sonuçlar</div>
+        <div class="q-text">${esc(q.text)}</div>
+        <div class="card-title" style="margin-top:12px">Doğru Cevap</div>
+        <div class="answer-reveal">${esc(q.answer)} <span style="font-size:1.4rem;color:var(--mut)">${esc(q.unit)}</span></div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">🎯 Tahminler</div>
+          <table>
+            ${(s.results || []).map(r => `
+              <tr class="${r.winner ? 'win' : ''}">
+                <td>${esc(r.name)}${r.winner ? ' <span class="winner-chip">+1 🏆</span>' : ''}</td>
+                <td>${r.guess === null ? '<span style="color:var(--mut)">—</span>' : esc(r.guess)}</td>
+                <td>${r.diff === null ? '' : `<span class="diff-chip">±${typeof r.diff === 'number' ? r.diff.toFixed(2) : r.diff}</span>`}</td>
+              </tr>`).join('')}
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-title">📊 Anlık Skor</div>
+          <table>
+            ${s.leaderboard.map((p, i) => `
+              <tr class="${i === 0 ? 'win' : ''}">
+                <td><span class="rank-medal">${rankMedal(i)}</span> ${esc(p.name)}</td>
+                <td style="font-weight:800">${p.score}</td>
+              </tr>`).join('')}
+          </table>
+        </div>
+      </div>
+      <button class="btn big ${isLast ? 'finish' : 'next'}" onclick="act('next')">
+        ${isLast ? '🏁 Oyunu Bitir ve Skor Tablosunu Göster' : '➡ Sonraki Soruya Geç'}
+      </button>`;
+  }
+
+  /* ============ FINISHED ============ */
+  if (s.phase === 'finished') {
+    html += `
+      <div class="card">
+        <div class="card-title">🏆 Final Sıralaması</div>
+        <table>
+          ${s.leaderboard.map((p, i) => `
+            <tr class="${i === 0 ? 'win' : ''}">
+              <td style="width:40px;font-size:1.2rem">${rankMedal(i)}</td>
+              <td style="font-weight:700">${esc(p.name)}</td>
+              <td style="font-weight:900;font-size:1.2rem;color:var(--gold)">${p.score}</td>
+            </tr>`).join('')}
+        </table>
+      </div>
+      <button class="btn big sec" onclick="act('restart')" style="margin-top:6px">🔄 Yeni Oyun Başlat (Lobi)</button>`;
+  }
+
+  app.innerHTML = html;
+}
+
+render();
+connect();
+</script>
+</body>
+</html>

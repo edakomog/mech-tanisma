@@ -1,0 +1,7 @@
+[
+  { "text": "Ay'ın Dünya'ya ortalama uzaklığı kaç km?", "answer": 384400, "unit": "km" },
+  { "text": "Everest Dağı'nın yüksekliği kaç metre?", "answer": 8849, "unit": "m" },
+  { "text": "Işık saniyede yaklaşık kaç km yol alır?", "answer": 299792, "unit": "km" },
+  { "text": "Nil Nehri'nin uzunluğu yaklaşık kaç km?", "answer": 6650, "unit": "km" },
+  { "text": "İstanbul'un 2024 nüfusu yaklaşık kaç milyon?", "answer": 15.7, "unit": "milyon" }
+]

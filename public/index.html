@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Yakın Tahmin 🎯</title>
+<style>
+  :root {
+    --bg: #1a0000;
+    --bg2: #2d0505;
+    --card: #3d0a0a;
+    --card2: #4a0f0f;
+    --border: #7f1d1d;
+    --fg: #fff5f5;
+    --mut: #fca5a5;
+    --acc: #ef4444;
+    --acc2: #dc2626;
+    --gold: #fbbf24;
+    --ok: #4ade80;
+    --win: #fde68a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at top, #4a0a0a 0%, #1a0000 60%);
+    color: var(--fg);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 16px;
+  }
+  main { width: 100%; max-width: 460px; }
+
+  .logo {
+    text-align: center;
+    padding: 20px 0 10px;
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #fff;
+    text-shadow: 0 0 30px #ef444488;
+  }
+  .logo span { color: var(--acc); }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 22px;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 24px #0008;
+  }
+
+  .label {
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--mut);
+    margin-bottom: 8px;
+  }
+
+  .question-text {
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .unit-badge {
+    display: inline-block;
+    background: #7f1d1d44;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px 10px;
+    font-size: .82rem;
+    color: var(--mut);
+    margin-bottom: 14px;
+  }
+
+  .progress-bar {
+    background: #7f1d1d33;
+    border-radius: 99px;
+    height: 6px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--acc2), var(--gold));
+    border-radius: 99px;
+    transition: width .4s;
+  }
+
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 15px 16px;
+    border-radius: 12px;
+    border: 2px solid var(--border);
+    background: #1a0000;
+    color: #fff;
+    font-size: 1.15rem;
+    margin: 10px 0 6px;
+    transition: border-color .2s;
+    -webkit-appearance: none;
+  }
+  input:focus { outline: none; border-color: var(--acc); }
+  input::placeholder { color: #7f3f3f; }
+
+  .btn {
+    width: 100%;
+    padding: 15px;
+    border: 0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--acc), var(--acc2));
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 800;
+    cursor: pointer;
+    letter-spacing: .02em;
+    transition: opacity .15s, transform .1s;
+    box-shadow: 0 4px 16px #ef444444;
+  }
+  .btn:active { transform: scale(.97); opacity: .9; }
+  .btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+  .btn.sec {
+    background: #3d0a0a;
+    box-shadow: none;
+    border: 1px solid var(--border);
+  }
+
+  .err {
+    color: #fca5a5;
+    font-size: .88rem;
+    min-height: 1.4em;
+    text-align: center;
+    padding: 4px 0;
+  }
+
+  /* Waiting dots animation */
+  .dots::after {
+    content: '...';
+    animation: dots 1.5s steps(3, end) infinite;
+  }
+  @keyframes dots {
+    0%  { content: '.'; }
+    33% { content: '..'; }
+    66% { content: '...'; }
+  }
+
+  /* Player count pill */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #7f1d1d33;
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 5px 14px;
+    font-size: .85rem;
+    color: var(--mut);
+    margin-top: 6px;
+  }
+  .pill-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--ok);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .5; transform: scale(.8); }
+  }
+
+  /* Answer big */
+  .answer-big {
+    font-size: 2.6rem;
+    font-weight: 900;
+    text-align: center;
+    padding: 12px 0;
+    color: var(--gold);
+    text-shadow: 0 0 24px #fbbf2466;
+  }
+
+  /* Result table */
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 9px 6px; border-bottom: 1px solid #7f1d1d33; font-size: .95rem; }
+  td:last-child { text-align: right; }
+  tr.win td { color: var(--gold); font-weight: 800; }
+  tr.me td { font-style: italic; }
+
+  /* Score rank */
+  .rank-num {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--mut);
+    width: 28px;
+    display: inline-block;
+  }
+  .rank-num.gold { color: var(--gold); }
+  .rank-num.silver { color: #cbd5e1; }
+  .rank-num.bronze { color: #cd7f32; }
+
+  /* Winner banner */
+  .winner-banner {
+    background: linear-gradient(135deg, #78350f, #92400e);
+    border: 1px solid var(--gold);
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .winner-banner .emoji { font-size: 2rem; }
+  .winner-banner .text { font-weight: 800; color: var(--gold); font-size: 1.1rem; margin-top: 4px; }
+
+  /* Score chip */
+  .score-chip {
+    background: #7f1d1d33;
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 4px 12px;
+    font-size: .82rem;
+    color: var(--mut);
+    float: right;
+    margin-top: 2px;
+  }
+
+  /* Guess sent state */
+  .guess-sent {
+    background: #14532d44;
+    border: 1px solid #166534;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: .9rem;
+    color: var(--ok);
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Finish podium */
+  .podium {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .podium-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #7f1d1d22;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+  }
+  .podium-row.first {
+    background: linear-gradient(135deg, #78350f33, #92400e33);
+    border-color: var(--gold);
+  }
+  .podium-name { flex: 1; font-weight: 700; font-size: 1rem; }
+  .podium-score {
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: var(--gold);
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="logo">🎯 Yakın <span>Tahmin</span></div>
+  <div id="view"></div>
+</main>
+<script>
+const $ = (h) => { document.getElementById('view').innerHTML = h; };
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let token = localStorage.getItem('yt-token');
+let ws, state = null, joinError = '';
+
+function connect() {
+  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+  ws.onopen = () => { if (token) ws.send(JSON.stringify({ type: 'join', token })); else render(); };
+  ws.onmessage = (e) => {
+    const m = JSON.parse(e.data);
+    if (m.type === 'joined') { token = m.token; localStorage.setItem('yt-token', token); }
+    else if (m.type === 'joinError') { joinError = m.message; render(); }
+    else if (m.type === 'kicked') { localStorage.removeItem('yt-token'); token = null; state = null; joinError = 'Oyundan çıkarıldın.'; render(); }
+    else if (m.type === 'state') { state = m; render(); }
+  };
+  ws.onclose = () => setTimeout(connect, 1500);
+}
+
+function join() {
+  const name = document.getElementById('name').value.trim();
+  if (!name) { joinError = 'Lütfen bir isim yaz.'; render(); return; }
+  joinError = '';
+  ws.send(JSON.stringify({ type: 'join', name }));
+}
+function sendGuess() {
+  const v = document.getElementById('guess').value;
+  if (v === '') return;
+  ws.send(JSON.stringify({ type: 'guess', value: v }));
+}
+
+// Enter key support
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  const name = document.getElementById('name');
+  const guess = document.getElementById('guess');
+  if (name && document.activeElement === name) join();
+  if (guess && document.activeElement === guess) sendGuess();
+});
+
+function rankNum(i) {
+  if (i === 0) return `<span class="rank-num gold">🥇</span>`;
+  if (i === 1) return `<span class="rank-num silver">🥈</span>`;
+  if (i === 2) return `<span class="rank-num bronze">🥉</span>`;
+  return `<span class="rank-num">${i+1}.</span>`;
+}
+
+function podium(list, myName) {
+  return list.map((p, i) =>
+    `<div class="podium-row${i===0?' first':''}">
+      ${rankNum(i)}
+      <span class="podium-name">${esc(p.name)}${p.name===myName?' <span style="color:var(--mut);font-size:.8rem">(sen)</span>':''}</span>
+      <span class="podium-score">${p.score}</span>
+    </div>`
+  ).join('');
+}
+
+function render() {
+  if (!state || !state.me) {
+    $(`<div class="card">
+        <div class="label">Oyuna katıl</div>
+        <input id="name" type="text" maxlength="20" placeholder="İsmin..." autocomplete="off" autocorrect="off" spellcheck="false">
+        <div class="err">${esc(joinError)}</div>
+        <button class="btn" onclick="join()">Katıl →</button>
+      </div>`);
+    // auto-focus
+    setTimeout(() => { const el = document.getElementById('name'); if(el) el.focus(); }, 50);
+    return;
+  }
+  const { phase, me, question: q } = state;
+
+  if (phase === 'lobby') {
+    $(`<div class="card">
+        <div class="label">Lobi</div>
+        <div style="font-size:1.15rem;font-weight:700;margin-bottom:10px">Hoş geldin, ${esc(me.name)}! 👋</div>
+        <p style="color:var(--mut);font-size:.92rem">Host oyunu başlatana kadar bekle.</p>
+        <div class="pill"><div class="pill-dot"></div>${state.playerCount} kişi bekleniyor<span class="dots"></span></div>
+      </div>`);
+
+  } else if (phase === 'question') {
+    const done = me.guess !== null;
+    const pct = Math.round((state.answeredCount / Math.max(state.playerCount, 1)) * 100);
+    $(`<div class="card">
+        <div class="label">Soru ${q.index + 1} / ${q.total}</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <div class="question-text">${esc(q.text)}</div>
+        ${q.unit ? `<span class="unit-badge">Birim: ${esc(q.unit)}</span>` : ''}
+        <input id="guess" type="number" step="any" inputmode="decimal" placeholder="Tahminin..." value="${done ? esc(me.guess) : ''}">
+        <button class="btn" onclick="sendGuess()" style="margin-top:4px">${done ? '✏️ Güncelle' : '✅ Gönder'}</button>
+        ${done ? `<div class="guess-sent">✓ Tahminin alındı: <strong>${esc(me.guess)}</strong> — değiştirebilirsin</div>` : ''}
+        <p style="text-align:center;color:var(--mut);font-size:.82rem;margin-top:10px">${state.answeredCount} / ${state.playerCount} kişi cevapladı</p>
+      </div>`);
+    if (!done) setTimeout(() => { const el = document.getElementById('guess'); if(el) el.focus(); }, 50);
+
+  } else if (phase === 'reveal') {
+    const r = state.results || [];
+    const mine = r.find((x) => x.name === me.name);
+    $(`${mine && mine.winner
+        ? `<div class="winner-banner"><div class="emoji">🎯</div><div class="text">En yakın tahmin → +1 puan!</div></div>`
+        : `<div class="card" style="text-align:center;padding:14px"><span style="font-size:1.3rem">Bu sefer olmadı 💪</span></div>`}
+      <div class="card">
+        <div class="label">Doğru cevap</div>
+        <div class="answer-big">${esc(q.answer)} <span style="font-size:1.4rem;color:var(--mut)">${esc(q.unit)}</span></div>
+      </div>
+      <div class="card">
+        <div class="label">Tahminler</div>
+        <table>${r.map((x) =>
+          `<tr class="${x.winner ? 'win' : ''}${x.name === me.name ? ' me' : ''}">
+            <td>${esc(x.name)}${x.winner ? ' 🎯' : ''}</td>
+            <td>${x.guess === null ? '—' : esc(x.guess)}</td>
+            <td style="color:var(--mut);font-size:.82rem">${x.diff === null ? '' : '±' + esc(x.diff.toFixed ? x.diff.toFixed(2) : x.diff)}</td>
+          </tr>`).join('')}
+        </table>
+      </div>
+      <div class="card">
+        <div class="label">Anlık Skor</div>
+        <div class="podium">${podium(state.leaderboard, me.name)}</div>
+      </div>
+      <p style="text-align:center;color:var(--mut);font-size:.85rem;padding:8px 0">Host sonraki soruya geçecek<span class="dots"></span></p>`);
+
+  } else if (phase === 'finished') {
+    $(`<div class="card">
+        <div class="label">🏆 Oyun Bitti — Final Sıralaması</div>
+        <div class="podium" style="margin-top:10px">${podium(state.leaderboard, me.name)}</div>
+      </div>
+      <p style="text-align:center;color:var(--mut);font-size:.85rem;padding:8px 0">Host yeni oyun başlatabilir.</p>`);
+  }
+}
+
+render();
+connect();
+</script>
+</body>
+</html>
