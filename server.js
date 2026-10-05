@@ -36,8 +36,9 @@ async function getNgrokUrl() {
   }
 }
 
-// En iyi public URL'i döndür: ngrok varsa ngrok, yoksa yerel IP
+// En iyi public URL'i döndür: önce env var, sonra ngrok, sonra yerel IP
 async function getPublicUrl() {
+  if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL.replace(/\/$/, '') + '/';
   const ngrok = await getNgrokUrl();
   if (ngrok) return ngrok + '/';
   return `http://${LOCAL_IP}:${PORT}/`;
